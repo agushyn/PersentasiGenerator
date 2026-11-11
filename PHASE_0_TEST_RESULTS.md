@@ -52,6 +52,10 @@ Manifest piped to `packages\pptx-engine\dist\cli.cjs`:
 - Bug found and fixed during validation: PptxGenJS appends `.pptx` to any
   fileName lacking that suffix, which broke the `.tmp` temp-file naming.
   Temp name is now `.<name>.tmp.pptx`. Re-tested: pass.
+- Error contract: invalid manifests (bad `schema_version`, empty
+  `output_path`, empty slides, unknown `slide_type`) return
+  `{ok:false, error_code:"SLIDE_SPEC_INVALID", message:…}` on stdout with
+  exit code 2. Verified by direct runs.
 
 ## 5. PPTX structural validation
 
