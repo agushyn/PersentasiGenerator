@@ -1,0 +1,17 @@
+{
+  "name": "@adps/pptx-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "PPTX generation engine for Arya Duta Persentasion Studio (Node.js sidecar, PptxGenJS)",
+  "main": "dist/cli.cjs",
+  "scripts": {
+    "build": "esbuild src/cli.mjs --bundle --platform=node --format=cjs --outfile=dist/cli.cjs"
+  },
+  "dependencies": {
+    "pptxgenjs": "^4.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

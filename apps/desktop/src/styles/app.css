@@ -1,0 +1,25 @@
+/* Application UI tokens from DESIGN.md section 5 (neutral light theme). */
+@import "tailwindcss";
+
+@theme {
+  --color-app-bg: #f4f5f6;
+  --color-surface: #ffffff;
+  --color-surface-muted: #eceef0;
+  --color-text-primary: #202428;
+  --color-text-secondary: #69727b;
+  --color-border-subtle: #dde1e5;
+  --color-accent: #a94f36;
+  --color-accent-soft: #f3e5df;
+  --color-success: #26734d;
+  --color-warning: #a66a18;
+  --color-danger: #b33a36;
+  --color-info: #3e668c;
+
+  --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--color-app-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+}

@@ -1,0 +1,26 @@
+# Node
+node_modules/
+
+# Build artifacts
+dist/
+target/
+
+# Tauri generated
+src-tauri/gen/
+
+# Downloaded sidecar runtime (re-fetchable via scripts/build-sidecar.ps1)
+src-tauri/binaries/*.exe
+
+# Env and OS
+.env
+.env.*
+Thumbs.db
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# Local proof-of-concept outputs
+*.pptx
+*.log
