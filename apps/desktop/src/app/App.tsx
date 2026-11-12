@@ -15,7 +15,7 @@ export default function App() {
     <Layout active={view} onNavigate={setView}>
       {view === "dashboard" && <DashboardView onNavigate={setView} />}
       {view === "new" && <NewPresentationView onNavigate={setView} />}
-      {view === "projects" && <ProjectsView />}
+      {view === "projects" && <ProjectsView onNavigate={setView} />}
       {view === "library" && <DesignLibraryView />}
       {view === "settings" && <SettingsView onNavigate={setView} />}
       {view === "harness" && <ValidationHarnessView />}

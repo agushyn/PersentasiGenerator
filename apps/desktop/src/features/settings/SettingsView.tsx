@@ -1,7 +1,13 @@
+import { useState } from "react";
 import { Button } from "../../components/ui/Button";
+import { Input } from "../../components/ui/Input";
+import { Dialog } from "../../components/ui/Dialog";
 import { Tabs } from "../../components/ui/Tabs";
+import { useNotifications } from "../../components/ui/Notifications";
 import { ErrorState, Skeleton, StatusBadge } from "../../components/ui/states";
 import { useAppStatus } from "../../hooks/useAppStatus";
+import { useWorkspace } from "../../hooks/useWorkspace";
+import { formatIpcError } from "../../hooks/useProjects";
 import type { ViewId } from "../../app/navigation";
 
 /**
@@ -10,8 +16,11 @@ import type { ViewId } from "../../app/navigation";
  */
 export function SettingsView({ onNavigate }: { onNavigate: (view: ViewId) => void }) {
   const { status, loading, error, reload } = useAppStatus();
-
-  const dataDir = status?.db_path ? status.db_path.replace(/\\poc\.db$/, "") : null;
+  const workspace = useWorkspace();
+  const { notify } = useNotifications();
+  const [rootDialogOpen, setRootDialogOpen] = useState(false);
+  const [rootDraft, setRootDraft] = useState("");
+  const [savingRoot, setSavingRoot] = useState(false);
 
   const providers = (
     <div className="rounded-lg border border-border-subtle bg-surface p-4">
@@ -42,20 +51,66 @@ export function SettingsView({ onNavigate }: { onNavigate: (view: ViewId) => voi
   );
 
   const storage = (
-    <div className="rounded-lg border border-border-subtle bg-surface p-4">
-      <p className="text-sm font-medium">Application data location</p>
-      {loading ? (
-        <div className="mt-2">
-          <Skeleton lines={1} />
+    <div className="space-y-3">
+      <div className="rounded-lg border border-border-subtle bg-surface p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">Project workspace</p>
+            {workspace.loading ? (
+              <div className="mt-2">
+                <Skeleton lines={1} />
+              </div>
+            ) : workspace.error ? (
+              <div className="mt-2">
+                <ErrorState title="Could not load workspace settings" detail={workspace.error} onRetry={workspace.reload} />
+              </div>
+            ) : workspace.info ? (
+              <div className="mt-2 space-y-1">
+                <p className="font-mono text-xs break-all text-text-secondary">{workspace.info.root}</p>
+                {workspace.info.customized ? (
+                  <p className="text-xs text-text-secondary">
+                    Custom location. Default: <span className="font-mono">{workspace.info.default_root}</span>
+                  </p>
+                ) : (
+                  <p className="text-xs text-text-secondary">Default location (Documents based).</p>
+                )}
+              </div>
+            ) : null}
+            <p className="mt-2 text-xs text-text-secondary">
+              New project folders are created here. Changing the location does not move existing projects.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            {workspace.info?.customized && <StatusBadge tone="accent">Custom</StatusBadge>}
+            <Button
+              size="sm"
+              onClick={() => {
+                setRootDraft(workspace.info?.root ?? "");
+                setRootDialogOpen(true);
+              }}
+            >
+              Change location
+            </Button>
+          </div>
         </div>
-      ) : dataDir ? (
-        <p className="mt-2 font-mono text-xs break-all text-text-secondary">{dataDir}</p>
-      ) : (
-        <p className="mt-2 text-sm text-text-secondary">Resolving…</p>
-      )}
-      <p className="mt-2 text-xs text-text-secondary">
-        Configurable project storage location arrives with project management (Phase 2). The app resolves paths via platform APIs; no user-profile paths are hard-coded.
-      </p>
+      </div>
+      <div className="rounded-lg border border-border-subtle bg-surface p-4">
+        <p className="text-sm font-medium">Application data</p>
+        {loading ? (
+          <div className="mt-2">
+            <Skeleton lines={1} />
+          </div>
+        ) : status ? (
+          <p className="mt-2 font-mono text-xs break-all text-text-secondary">
+            {status.db_path}
+          </p>
+        ) : (
+          <p className="mt-2 text-sm text-text-secondary">Resolving…</p>
+        )}
+        <p className="mt-2 text-xs text-text-secondary">
+          The SQLite database lives here. The app resolves paths via platform APIs; no user-profile paths are hard-coded.
+        </p>
+      </div>
     </div>
   );
 
@@ -114,6 +169,19 @@ export function SettingsView({ onNavigate }: { onNavigate: (view: ViewId) => voi
     </div>
   );
 
+  const saveRoot = async () => {
+    setSavingRoot(true);
+    try {
+      await workspace.setRoot(rootDraft);
+      notify("success", "Workspace location updated", "Applies to newly created projects.");
+      setRootDialogOpen(false);
+    } catch (reason) {
+      notify("error", "Could not change workspace", formatIpcError(reason));
+    } finally {
+      setSavingRoot(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-3xl">
       <header>
@@ -135,6 +203,31 @@ export function SettingsView({ onNavigate }: { onNavigate: (view: ViewId) => voi
           ]}
         />
       </div>
+
+      <Dialog
+        open={rootDialogOpen}
+        onClose={() => setRootDialogOpen(false)}
+        title="Change workspace location"
+        description="New project folders will be created under this path. Existing projects stay where they are."
+        footer={
+          <>
+            <Button onClick={() => setRootDialogOpen(false)} disabled={savingRoot}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={() => void saveRoot()} disabled={savingRoot}>
+              Save location
+            </Button>
+          </>
+        }
+      >
+        <Input
+          label="Workspace folder"
+          hint="Must be an absolute path, for example D:\\Presentations."
+          value={rootDraft}
+          onChange={(event) => setRootDraft(event.target.value)}
+          spellCheck={false}
+        />
+      </Dialog>
     </div>
   );
 }

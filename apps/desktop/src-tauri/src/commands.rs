@@ -6,6 +6,7 @@
 //! - No command ever returns a credential secret.
 
 use serde::Serialize;
+use std::path::PathBuf;
 use tauri::State;
 
 use crate::credentials;
@@ -13,6 +14,7 @@ use crate::db::{self, PocItem};
 use crate::error::AppResult;
 use crate::renderer;
 use crate::sidecar;
+use crate::workspace_config;
 use crate::AppState;
 
 #[derive(Serialize)]
@@ -185,4 +187,115 @@ pub fn credential_poc_status(account: String) -> AppResult<bool> {
 #[tauri::command]
 pub fn credential_poc_delete(account: String) -> AppResult<bool> {
     credentials::delete_secret(&account)
+}
+
+// ---------------------------------------------------------------------------
+// Phase 2: projects and workspace
+// ---------------------------------------------------------------------------
+
+use crate::projects::{self, NewProject, Project};
+
+fn current_workspace_root(state: &State<'_, AppState>) -> PathBuf {
+    state.workspace_root.lock().unwrap().clone()
+}
+
+#[derive(Serialize)]
+pub struct WorkspaceInfo {
+    /// Effective root where new project folders are created.
+    pub root: String,
+    /// Built-in fallback root (Documents based) shown for reference.
+    pub default_root: String,
+    /// True when the effective root was persisted by the user.
+    pub customized: bool,
+}
+
+#[tauri::command]
+pub fn project_create(
+    state: State<'_, AppState>,
+    title: String,
+    topic: Option<String>,
+    audience: Option<String>,
+    language: Option<String>,
+    duration_minutes: Option<i64>,
+) -> AppResult<Project> {
+    let new = NewProject {
+        title,
+        topic,
+        audience,
+        language,
+        duration_minutes,
+    };
+    let conn = open_db(&state)?;
+    let root = current_workspace_root(&state);
+    projects::ensure_workspace_root(&root)?;
+    projects::create(&conn, &root, &new)
+}
+
+#[tauri::command]
+pub fn project_list(state: State<'_, AppState>) -> AppResult<Vec<Project>> {
+    let conn = open_db(&state)?;
+    projects::list(&conn)
+}
+
+/// Returns one project and repairs its workspace (missing folders or
+/// `project.json` are recreated from the database row).
+#[tauri::command]
+pub fn project_get(state: State<'_, AppState>, id: String) -> AppResult<Project> {
+    let conn = open_db(&state)?;
+    let project = projects::get(&conn, &id)?;
+    projects::repair_workspace(&project)?;
+    Ok(project)
+}
+
+#[tauri::command]
+pub fn project_rename(state: State<'_, AppState>, id: String, title: String) -> AppResult<Project> {
+    let conn = open_db(&state)?;
+    projects::rename(&conn, &id, &title)
+}
+
+#[tauri::command]
+pub fn project_set_status(
+    state: State<'_, AppState>,
+    id: String,
+    status: String,
+) -> AppResult<Project> {
+    let conn = open_db(&state)?;
+    projects::set_status(&conn, &id, &status)
+}
+
+/// Hard delete. Requires explicit confirmation in the UI (DESIGN.md section 8).
+#[tauri::command]
+pub fn project_delete(state: State<'_, AppState>, id: String) -> AppResult<bool> {
+    let conn = open_db(&state)?;
+    projects::delete(&conn, &id)
+}
+
+fn workspace_info(state: &State<'_, AppState>) -> WorkspaceInfo {
+    let persisted = workspace_config::load(&state.config_path);
+    WorkspaceInfo {
+        root: current_workspace_root(state).to_string_lossy().into_owned(),
+        default_root: state
+            .default_workspace_root
+            .to_string_lossy()
+            .into_owned(),
+        customized: persisted.workspace_root.is_some(),
+    }
+}
+
+#[tauri::command]
+pub fn workspace_get(state: State<'_, AppState>) -> AppResult<WorkspaceInfo> {
+    Ok(workspace_info(&state))
+}
+
+/// Changes the workspace root for NEW projects. Existing projects keep their
+/// recorded `workspace_path`; the UI communicates this.
+#[tauri::command]
+pub fn workspace_set_root(state: State<'_, AppState>, path: String) -> AppResult<WorkspaceInfo> {
+    let root = workspace_config::validate_root(&path)?;
+    let config = workspace_config::WorkspaceConfigFile {
+        workspace_root: Some(root.to_string_lossy().into_owned()),
+    };
+    workspace_config::save(&state.config_path, &config)?;
+    *state.workspace_root.lock().unwrap() = root;
+    Ok(workspace_info(&state))
 }

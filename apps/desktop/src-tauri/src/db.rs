@@ -12,11 +12,18 @@ use rusqlite::Connection;
 use crate::error::{AppError, AppResult};
 
 /// (version, name, sql) pairs applied in order.
-const MIGRATIONS: &[(i64, &str, &str)] = &[(
-    1,
-    "poc_init",
-    include_str!("../migrations/0001_poc.sql"),
-)];
+const MIGRATIONS: &[(i64, &str, &str)] = &[
+    (
+        1,
+        "poc_init",
+        include_str!("../migrations/0001_poc.sql"),
+    ),
+    (
+        2,
+        "projects",
+        include_str!("../migrations/0002_projects.sql"),
+    ),
+];
 
 /// Opens a connection with foreign keys enabled.
 pub fn open(path: &Path) -> AppResult<Connection> {
@@ -82,8 +89,8 @@ pub fn run_migrations(conn: &Connection) -> AppResult<Vec<i64>> {
     Ok(applied)
 }
 
-fn utc_now() -> String {
-    // Phase 0 keeps timestamps in ISO-8601 UTC without pulling chrono.
+/// ISO-8601 UTC timestamp without external dependencies.
+pub fn utc_now() -> String {    // Phase 0 keeps timestamps in ISO-8601 UTC without pulling chrono.
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default();
@@ -181,7 +188,7 @@ mod tests {
         let conn = open(&path).unwrap();
 
         let first = run_migrations(&conn).unwrap();
-        assert_eq!(first, vec![1]);
+        assert_eq!(first, vec![1, 2]);
         // Running again must be a no-op.
         let second = run_migrations(&conn).unwrap();
         assert!(second.is_empty());

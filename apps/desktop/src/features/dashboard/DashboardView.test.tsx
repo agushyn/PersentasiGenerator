@@ -2,18 +2,30 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppStatus } from "../../types/poc";
+import type { Project } from "../../types/projects";
 
-// The dashboard consumes the app_status IPC through this hook; jsdom has no
-// Tauri runtime, so the hook is replaced with controllable state.
-const hookState = vi.hoisted(() => ({
+// Both dashboard data sources are IPC hooks; jsdom has no Tauri runtime, so
+// they are replaced with controllable state.
+const statusState = vi.hoisted(() => ({
   status: null as AppStatus | null,
   loading: false,
   error: null as string | null,
   reload: vi.fn(),
 }));
 
+const projectsState = vi.hoisted(() => ({
+  projects: [] as Project[],
+  loading: false,
+  error: null as string | null,
+  reload: vi.fn(),
+}));
+
 vi.mock("../../hooks/useAppStatus", () => ({
-  useAppStatus: () => hookState,
+  useAppStatus: () => statusState,
+}));
+
+vi.mock("../../hooks/useProjects", () => ({
+  useProjects: () => projectsState,
 }));
 
 import { DashboardView } from "./DashboardView";
@@ -29,6 +41,22 @@ const sampleStatus: AppStatus = {
   renderer: "LibreOffice not found (preview rendering and PDF export unavailable)",
 };
 
+function makeProject(overrides: Partial<Project> = {}): Project {
+  return {
+    id: "00000000-0000-4000-8000-000000000000",
+    title: "Fotosintesis",
+    topic: "Biologi",
+    audience: null,
+    language: null,
+    duration_minutes: null,
+    status: "active",
+    workspace_path: "C:\\workspace\\00000000-0000-4000-8000-000000000000",
+    created_at: "2026-11-12T08:00:00Z",
+    updated_at: "2026-11-12T08:00:00Z",
+    ...overrides,
+  };
+}
+
 function renderDashboard() {
   const onNavigate = vi.fn();
   const utils = render(<DashboardView onNavigate={onNavigate} />);
@@ -37,9 +65,12 @@ function renderDashboard() {
 
 describe("DashboardView", () => {
   beforeEach(() => {
-    hookState.status = sampleStatus;
-    hookState.loading = false;
-    hookState.error = null;
+    statusState.status = sampleStatus;
+    statusState.loading = false;
+    statusState.error = null;
+    projectsState.projects = [];
+    projectsState.loading = false;
+    projectsState.error = null;
   });
 
   it("shows the primary action and the recent-projects empty state", async () => {
@@ -52,27 +83,49 @@ describe("DashboardView", () => {
     expect(view.onNavigate).toHaveBeenCalledWith("new");
   });
 
-  it("shows loading skeletons while the status loads", () => {
-    hookState.loading = true;
+  it("lists the three most recent projects with archived markers", () => {
+    projectsState.projects = [
+      makeProject({ title: "One", id: "a" }),
+      makeProject({ title: "Two", id: "b", status: "archived" }),
+      makeProject({ title: "Three", id: "c" }),
+      makeProject({ title: "Four", id: "d" }),
+    ];
+    renderDashboard();
+
+    expect(screen.getByText("One")).toBeInTheDocument();
+    expect(screen.getByText("Two")).toBeInTheDocument();
+    expect(screen.getByText("Three")).toBeInTheDocument();
+    expect(screen.queryByText("Four")).not.toBeInTheDocument();
+    expect(screen.getByText("Archived")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "View all" })).toBeInTheDocument();
+  });
+
+  it("shows a retry action when the project list fails", async () => {
+    projectsState.error = "IPC failed";
+    const user = userEvent.setup();
+    renderDashboard();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not load projects");
+    await user.click(screen.getByRole("button", { name: "Retry" }));
+    expect(projectsState.reload).toHaveBeenCalled();
+  });
+
+  it("shows loading skeletons while projects load", () => {
+    projectsState.loading = true;
     const { container } = renderDashboard();
     expect(screen.queryByText("No projects yet")).not.toBeInTheDocument();
     expect(container.querySelectorAll("[aria-hidden='true']").length).toBeGreaterThan(0);
   });
 
   it("shows a retry action when the status command fails", async () => {
-    hookState.status = null;
-    hookState.error = "IPC failed";
+    statusState.status = null;
+    statusState.error = "IPC failed";
     const user = userEvent.setup();
     renderDashboard();
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not load application status");
     await user.click(screen.getByRole("button", { name: "Retry" }));
-    expect(hookState.reload).toHaveBeenCalled();
-  });
-
-  it("surfaces the renderer status line", () => {
-    renderDashboard();
-    expect(screen.getByText(/Renderer:/)).toHaveTextContent(sampleStatus.renderer);
+    expect(statusState.reload).toHaveBeenCalled();
   });
 });
 

@@ -1,6 +1,7 @@
 import { Button } from "../../components/ui/Button";
 import { EmptyState, ErrorState, Skeleton, StatusBadge } from "../../components/ui/states";
 import { useAppStatus } from "../../hooks/useAppStatus";
+import { useProjects } from "../../hooks/useProjects";
 import type { ViewId } from "../../app/navigation";
 
 /**
@@ -8,7 +9,10 @@ import type { ViewId } from "../../app/navigation";
  * a clear first-run empty state, and quick access to settings.
  */
 export function DashboardView({ onNavigate }: { onNavigate: (view: ViewId) => void }) {
-  const { status, loading, error, reload } = useAppStatus();
+  const { status, loading: statusLoading, error: statusError, reload } = useAppStatus();
+  const { projects, loading: projectsLoading, error: projectsError, reload: reloadProjects } =
+    useProjects();
+  const recent = projects.slice(0, 3);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -29,30 +33,62 @@ export function DashboardView({ onNavigate }: { onNavigate: (view: ViewId) => vo
       <section aria-label="Recent projects" className="mt-8">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-base font-semibold">Recent projects</h2>
-          {loading && <Skeleton lines={1} />}
+          {projects.length > 3 && (
+            <Button size="sm" variant="ghost" onClick={() => onNavigate("projects")}>
+              View all
+            </Button>
+          )}
         </div>
-        {loading ? (
+        {projectsLoading ? (
           <Skeleton lines={3} />
-        ) : error ? (
+        ) : projectsError ? (
           <ErrorState
-            title="Could not load application status"
-            detail={error}
-            onRetry={reload}
+            title="Could not load projects"
+            detail={projectsError}
+            onRetry={reloadProjects}
           />
-        ) : (
+        ) : recent.length === 0 ? (
           <EmptyState
             title="No projects yet"
-            description="Project storage arrives with local persistence in Phase 2. After that, this area lists your presentations with their current stage."
+            description="Create your first presentation. Projects are stored locally and survive restarts."
             action={
               <Button variant="primary" onClick={() => onNavigate("new")}>
                 Start your first presentation
               </Button>
             }
           />
+        ) : (
+          <ul className="overflow-hidden rounded-lg border border-border-subtle bg-surface">
+            {recent.map((project) => (
+              <li
+                key={project.id}
+                className="flex items-center justify-between gap-3 border-b border-border-subtle px-4 py-3 last:border-b-0"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-text-primary">{project.title}</p>
+                  <p className="text-xs text-text-secondary">
+                    Updated {project.updated_at.slice(0, 10)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {project.status === "archived" && (
+                    <StatusBadge tone="neutral">Archived</StatusBadge>
+                  )}
+                  <Button size="sm" variant="ghost" onClick={() => onNavigate("projects")}>
+                    Open
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
 
-      {status && (
+      {statusError ? (
+        <section aria-label="Setup hints" className="mt-8">
+          <ErrorState title="Could not load application status" detail={statusError} onRetry={reload} />
+        </section>
+      ) : status && !statusLoading ? (
         <section aria-label="Setup hints" className="mt-8">
           <h2 className="mb-3 text-base font-semibold">Setup</h2>
           <div className="rounded-lg border border-border-subtle bg-surface p-4">
@@ -75,7 +111,7 @@ export function DashboardView({ onNavigate }: { onNavigate: (view: ViewId) => vo
             Renderer: {status.renderer}
           </p>
         </section>
-      )}
+      ) : null}
     </div>
   );
 }

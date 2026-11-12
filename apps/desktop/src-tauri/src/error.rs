@@ -18,6 +18,9 @@ pub enum AppError {
 
     #[error("validation error: {0}")]
     Validation(String),
+
+    #[error("project not found: {id}")]
+    ProjectNotFound { id: String },
 }
 
 impl AppError {
@@ -35,6 +38,7 @@ impl AppError {
                 _ => "SIDECAR_FAILED",
             },
             AppError::Validation(_) => "VALIDATION_ERROR",
+            AppError::ProjectNotFound { .. } => "PROJECT_NOT_FOUND",
         }
     }
 }
@@ -55,6 +59,12 @@ impl Serialize for AppError {
 impl From<rusqlite::Error> for AppError {
     fn from(value: rusqlite::Error) -> Self {
         AppError::Db(value.to_string())
+    }
+}
+
+impl From<serde_json::Error> for AppError {
+    fn from(value: serde_json::Error) -> Self {
+        AppError::Io(value.to_string())
     }
 }
 
