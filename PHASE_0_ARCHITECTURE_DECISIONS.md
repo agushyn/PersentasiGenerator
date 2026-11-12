@@ -20,12 +20,13 @@ Windows, OpenCode as a development-only agent.
   `package.json`, `apps/desktop/index.html`, `main.rs` fallback title,
   credential service name, PPTX document metadata (author/company),
   and the Phase 0 validation UI.
-- **Conflict with documentation:** `AGENTS.md`, `PRD.md`, `DESIGN.md`,
-  `TECHNICAL_SPEC.md`, and `IMPLEMENTATION_PLAN.md` use the working title
-  "AI Presentation Studio". The documentation was **not** rewritten in
-  Phase 0 (that is an owner-level documentation change). **Action required:**
-  owner approval to update the five documents' titles, or confirm docs keep
-  the working name while product artifacts use the official name.
+- **Conflict with documentation:** resolved on 2026-11-12 — the owner
+  approved the official name; all five project documents
+  (`AGENTS.md`, `PRD.md`, `DESIGN.md`, `TECHNICAL_SPEC.md`,
+  `IMPLEMENTATION_PLAN.md`) now use **Arya Duta Persentasion Studio** in
+  product-name positions. Phase 0 evidence documents keep their historical
+  wording. The application identifier remains
+  `com.aryaduta.persentasionstudio`.
 - **App identifier:** `com.aryaduta.persentasionstudio` (drives Windows
   app-data paths and the NSIS uninstall registry entry).
 

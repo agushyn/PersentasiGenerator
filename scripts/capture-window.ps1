@@ -1,32 +1,43 @@
-# Captures the Arya Duta Persentasion Studio window as a PNG (evidence).
+# Captures a window's contents via PrintWindow (works when the window is
+# occluded by other applications). The script makes itself per-monitor DPI
+# aware first: without that, Windows virtualizes GetWindowRect/PrintWindow
+# coordinates for higher-DPI displays and the capture crops the window.
+param(
+    [string]$ProcessName = "arya-duta-persentasion-studio",
+    [Parameter(Mandatory = $true)][string]$OutPath
+)
 Add-Type -AssemblyName System.Drawing
 Add-Type @"
 using System;
 using System.Runtime.InteropServices;
-public class Win32Capture {
-  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+public class Win32Print {
+  [DllImport("user32.dll")] public static extern bool SetProcessDpiAwarenessContext(IntPtr value);
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
+  [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hWnd, IntPtr hdcBlt, uint nFlags);
   [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
 }
 "@
+# DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4. Failure is fine when the
+# context is already set for this process.
+try { [Win32Print]::SetProcessDpiAwarenessContext([IntPtr](-4)) | Out-Null } catch { }
 
-$outPath = "C:\OpenCode\Studio_Presentasi\phase0-evidence\dev-app.png"
-New-Item -ItemType Directory -Force (Split-Path $outPath) | Out-Null
-
-$p = Get-Process -Name "arya-duta-persentasion-studio" | Select-Object -First 1
+$p = Get-Process -Name $ProcessName | Select-Object -First 1
+if (-not $p) { throw "process $ProcessName not found" }
 $h = $p.MainWindowHandle
-[Win32Capture]::SetForegroundWindow($h) | Out-Null
-Start-Sleep -Milliseconds 1000
-
-$r = New-Object Win32Capture+RECT
-[Win32Capture]::GetWindowRect($h, [ref]$r) | Out-Null
+$r = New-Object Win32Print+RECT
+[Win32Print]::GetWindowRect($h, [ref]$r) | Out-Null
 $w = $r.Right - $r.Left
 $ht = $r.Bottom - $r.Top
 
 $bmp = New-Object System.Drawing.Bitmap $w, $ht
 $g = [System.Drawing.Graphics]::FromImage($bmp)
-$g.CopyFromScreen($r.Left, $r.Top, 0, 0, (New-Object System.Drawing.Size $w, $ht))
+$hdc = $g.GetHdc()
+# PW_RENDERFULLCONTENT = 2: renders WebView2 content correctly.
+[Win32Print]::PrintWindow($h, $hdc, 2) | Out-Null
+$g.ReleaseHdc($hdc)
 $g.Dispose()
-$bmp.Save($outPath, [System.Drawing.Imaging.ImageFormat]::Png)
+
+New-Item -ItemType Directory -Force (Split-Path $OutPath) | Out-Null
+$bmp.Save($OutPath, [System.Drawing.Imaging.ImageFormat]::Png)
 $bmp.Dispose()
-Write-Host "saved ${w}x${ht} -> $outPath"
+Write-Host "saved ${w}x${ht} -> $OutPath"

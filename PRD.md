@@ -1,9 +1,9 @@
 # Product Requirements Document (PRD)
-## AI Presentation Studio
+## Arya Duta Persentasion Studio
 
 | Field | Value |
 |---|---|
-| Product | AI Presentation Studio |
+| Product | Arya Duta Persentasion Studio |
 | Document | Product Requirements Document |
 | Version | 1.0 |
 | Status | Baseline for implementation |
@@ -16,7 +16,7 @@
 
 ## 1. Product overview
 
-AI Presentation Studio is a Windows desktop application for turning source materials and user instructions into high-quality, editable educational PowerPoint presentations.
+Arya Duta Persentasion Studio is a Windows desktop application for turning source materials and user instructions into high-quality, editable educational PowerPoint presentations.
 
 The application combines:
 - **Tauri 2 + Rust** for the desktop shell, local orchestration, secure credential handling, filesystem access, and application services.
@@ -60,7 +60,7 @@ These decisions are baseline requirements and must not be changed without an exp
 
 Users often have source materials but lack the time or design expertise to turn them into coherent, visually distinctive presentations. Existing AI slide tools can produce fast drafts, but commonly suffer from generic layouts, weak learning progression, repetitive cards, unsupported claims, and limited slide-level control.
 
-AI Presentation Studio addresses these issues by separating content reasoning, instructional design, art direction, slide rendering, and quality assurance into reviewable stages.
+Arya Duta Persentasion Studio addresses these issues by separating content reasoning, instructional design, art direction, slide rendering, and quality assurance into reviewable stages.
 
 ## 5. Target users
 

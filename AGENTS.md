@@ -1,10 +1,10 @@
 # AGENTS.md
 
-# AI Presentation Studio — Agent Instructions
+# Arya Duta Persentasion Studio — Agent Instructions
 
 ## 1. Project Overview
 
-AI Presentation Studio is a Windows desktop application for creating professional, editable PowerPoint presentations using AI.
+Arya Duta Persentasion Studio is a Windows desktop application for creating professional, editable PowerPoint presentations using AI.
 
 The application allows users to:
 - Generate presentations from natural-language prompts.

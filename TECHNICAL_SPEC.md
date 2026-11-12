@@ -1,5 +1,5 @@
 # Technical Specification
-## AI Presentation Studio
+## Arya Duta Persentasion Studio
 
 | Field | Value |
 |---|---|
@@ -19,7 +19,7 @@
 
 ## 1. Architecture overview
 
-AI Presentation Studio is a local-first desktop application.
+Arya Duta Persentasion Studio is a local-first desktop application.
 
 The Tauri application owns:
 - Window lifecycle.

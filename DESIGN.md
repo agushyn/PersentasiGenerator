@@ -1,11 +1,11 @@
 # Design Specification
-## AI Presentation Studio
+## Arya Duta Persentasion Studio
 
 | Field | Value |
 |---|---|
 | Version | 1.0 |
 | Status | Baseline visual direction |
-| Product | AI Presentation Studio |
+| Product | Arya Duta Persentasion Studio |
 | UI framework | React + TypeScript |
 | Styling | Tailwind CSS v4 |
 | Design direction | Premium editorial workspace |
@@ -15,7 +15,7 @@
 
 ## 1. Design vision
 
-AI Presentation Studio should feel like a professional editorial production environment: calm, precise, typographic, and focused on the work.
+Arya Duta Persentasion Studio should feel like a professional editorial production environment: calm, precise, typographic, and focused on the work.
 
 The interface should not resemble a generic chatbot, analytics dashboard, or template marketplace.
 

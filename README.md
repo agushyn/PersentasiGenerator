@@ -44,6 +44,9 @@ powershell -ExecutionPolicy Bypass -File scripts/build-sidecar.ps1  # bundle eng
 # Frontend build (strict TypeScript + Vite)
 npm run build --workspace apps/desktop
 
+# Frontend unit tests (Vitest + Testing Library)
+npm test --workspace apps/desktop
+
 # Rust tests
 cargo test --manifest-path apps\desktop\src-tauri\Cargo.toml
 

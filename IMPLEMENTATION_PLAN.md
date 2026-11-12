@@ -1,5 +1,5 @@
 # Implementation Plan
-## AI Presentation Studio
+## Arya Duta Persentasion Studio
 
 | Field | Value |
 |---|---|
